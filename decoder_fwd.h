@@ -26,7 +26,7 @@ inline auto decode(address_t, bytes_view data, size_t& pos) -> cpp_type<address_
 // bytes<N>
 template<unsigned N>
 requires ValidBytesN<N>
-inline auto decode(bytes_fixed_t<N>, bytes_view data, size_t& pos) -> cpp_type<bytes_fixed_t<N>>::type;
+inline auto decode(bytes_fixed_t<N>, bytes_view data, size_t& pos) -> typename cpp_type<bytes_fixed_t<N>>::type;
 
 // bytes
 inline auto decode(bytes_dyn_t, bytes_view data, size_t& pos) -> cpp_type<bytes_dyn_t>::type;
@@ -36,7 +36,7 @@ inline auto decode(string_t, bytes_view data, size_t& pos) -> cpp_type<string_t>
 
 // <T>[]: variable-length array of elements of the given type
 template<class T>
-inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos) -> cpp_type<dyn_array_t<T>>::type;
+inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos) -> typename cpp_type<dyn_array_t<T>>::type;
 
 // (T1, T2,...,Tn): tuple consisting of the types T1, ..., Tn, n >= 0
 template<class... Ts>

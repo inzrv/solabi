@@ -112,7 +112,7 @@ inline auto decode(address_t, bytes_view data, size_t& pos)
 template<unsigned N>
 requires ValidBytesN<N>
 inline auto decode(bytes_fixed_t<N>, bytes_view data, size_t& pos)
-    -> cpp_type<bytes_fixed_t<N>>::type
+    -> typename cpp_type<bytes_fixed_t<N>>::type
 {
     const auto substr_res = safe_substr(data, pos, WORD_SIZE);
     if (!substr_res) {
@@ -188,7 +188,7 @@ inline auto decode(string_t, bytes_view data, size_t& pos)
 // <T>[]: variable-length array of elements of the given type
 template<class T>
 inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos)
-    -> cpp_type<dyn_array_t<T>>::type
+    -> typename cpp_type<dyn_array_t<T>>::type
 {
     // Get offset
     const auto read_offset_res = read_size(data, pos);
