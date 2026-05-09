@@ -34,6 +34,10 @@ inline auto decode(bytes_dyn_t, bytes_view data, size_t& pos) -> cpp_type<bytes_
 // string
 inline auto decode(string_t, bytes_view data, size_t& pos) -> cpp_type<string_t>::type;
 
+// <T>[N]: fixed-length array of elements of the given type
+template<class T, size_t N>
+inline auto decode(array_t<T, N>, bytes_view data, size_t& pos) -> typename cpp_type<array_t<T, N>>::type;
+
 // <T>[]: variable-length array of elements of the given type
 template<class T>
 inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos) -> typename cpp_type<dyn_array_t<T>>::type;

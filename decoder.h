@@ -185,6 +185,41 @@ inline auto decode(string_t, bytes_view data, size_t& pos)
     return val;
 }
 
+// <T>[N]: fixed-length array of elements of the given type
+template<class T, size_t N>
+inline auto decode(array_t<T, N>, bytes_view data, size_t& pos)
+    -> typename cpp_type<array_t<T, N>>::type
+{
+    typename cpp_type<array_t<T, N>>::type val{};
+
+    if constexpr (is_static_v<T>) {
+        for (auto& item : val) {
+            item = decode(T{}, data, pos);
+        }
+    } else {
+        // Dynamic fixed array: its head contains an offset to tuple-like array data.
+        const auto read_offset_res = read_size(data, pos);
+        if (!read_offset_res) {
+            throw std::runtime_error("ABI decoder: can not read offset to 'fixed-length array' data");
+        }
+        pos += WORD_SIZE;
+        size_t offset = *read_offset_res;
+
+        const auto substr_res = safe_substr(data, offset);
+        if (!substr_res) {
+            throw std::runtime_error("ABI decoder: can not read 'fixed-length array' data");
+        }
+        const auto array_data = *substr_res;
+
+        size_t local_pos = 0;
+        for (auto& item : val) {
+            item = decode(T{}, array_data, local_pos);
+        }
+    }
+
+    return val;
+}
+
 // <T>[]: variable-length array of elements of the given type
 template<class T>
 inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos)
