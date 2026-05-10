@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Ivan Nazarov
+// SPDX-License-Identifier: MIT
+
 #include <solabi/utils.h>
 
 #include <gtest/gtest.h>

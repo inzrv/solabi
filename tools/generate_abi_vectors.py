@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# Copyright (c) 2026 Ivan Nazarov
+# SPDX-License-Identifier: MIT
+
 from __future__ import annotations
 
 import textwrap

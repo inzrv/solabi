@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ivan Nazarov
+# SPDX-License-Identifier: MIT
+
 cmake_minimum_required(VERSION 3.20)
 
 project(abi_decoder VERSION 0.1.0 LANGUAGES CXX)

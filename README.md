@@ -166,3 +166,7 @@ The project uses `clang-format`:
 ```bash
 clang-format -i include/solabi/*.h tests/*.cpp tests/*.h example/*.cpp
 ```
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE.txt) file for details.

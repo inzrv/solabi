@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Ivan Nazarov
+// SPDX-License-Identifier: MIT
+
 #include "test_types.h"
 
 #include <array>
