@@ -514,7 +514,7 @@ TEST(AbiDecoder, DecodesStaticStruct)
     const auto data = from_hex(abi_test_vectors::kStaticRecord);
 
     size_t pos = 0;
-    const auto value = solabi::decode_as<StaticRecord>(bytes_view{data.data(), data.size()}, pos);
+    const auto value = solabi::decode<StaticRecord>(bytes_view{data.data(), data.size()}, pos);
 
     EXPECT_EQ(pos, WORD_SIZE * 2);
     EXPECT_TRUE(value.id == intx::uint256{9});

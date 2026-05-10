@@ -66,8 +66,4 @@ inline auto decode(bytes_view data) -> typename cpp_type<Tag>::type;
 template<HasAbiTupleTag T>
 inline auto from_tuple(typename ::solabi::cpp_type<typename T::abi_tag>::type tup) -> T;
 
-template<class T>
-requires HasAbiTupleTag<T>
-inline auto decode_as(bytes_view data, size_t& pos) -> T;
-
 } // namespace solabi

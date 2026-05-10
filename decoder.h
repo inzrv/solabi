@@ -453,14 +453,4 @@ inline auto from_tuple(typename ::solabi::cpp_type<typename T::abi_tag>::type tu
     }, std::move(tup));
 }
 
-template<class T>
-requires HasAbiTupleTag<T>
-inline auto decode_as(bytes_view data, size_t& pos)
-    -> T
-{
-    using Tag = typename T::abi_tag;
-    auto tup = ::solabi::decode<Tag>(data, pos);
-    return from_tuple<T>(std::move(tup));
-}
-
 } // namespace solabi
