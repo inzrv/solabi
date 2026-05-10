@@ -196,6 +196,15 @@ TEST(AbiDecoder, FromHexRejectsMalformedInput)
     EXPECT_THROW(from_hex("0xzz"), std::invalid_argument);
 }
 
+TEST(AbiDecoder, RejectsTruncatedStaticWord)
+{
+    const auto data = from_hex("00");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::uint_t<256>>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
+}
+
 TEST(AbiDecoder, DecodesUintSizes)
 {
     {
@@ -326,6 +335,38 @@ TEST(AbiDecoder, DecodesEmptyDynamicValues)
         EXPECT_EQ(pos, WORD_SIZE);
         EXPECT_TRUE(value.empty());
     }
+}
+
+TEST(AbiDecoder, RejectsDynamicBytesWithOffsetOverflow)
+{
+    const auto data = from_hex(
+        "000000000000000000000000000000000000000000000000fffffffffffffff0");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::bytes_dyn_t>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
+}
+
+TEST(AbiDecoder, RejectsDynamicBytesWithPayloadLengthOverflow)
+{
+    const auto data = from_hex(
+        "0000000000000000000000000000000000000000000000000000000000000020"
+        "000000000000000000000000000000000000000000000000fffffffffffffff0");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::bytes_dyn_t>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
+}
+
+TEST(AbiDecoder, RejectsDynamicArrayWithOffsetOverflow)
+{
+    const auto data = from_hex(
+        "000000000000000000000000000000000000000000000000fffffffffffffff0");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::dyn_array_t<solabi::uint_t<256>>>(
+                     bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
 }
 
 TEST(AbiDecoder, DecodesString)

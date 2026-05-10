@@ -16,6 +16,14 @@ namespace solabi
 {
 namespace internal
 {
+inline std::optional<size_t> checked_add(size_t lhs, size_t rhs)
+{
+    if (rhs > static_cast<size_t>(-1) - lhs) {
+        return std::nullopt;
+    }
+    return lhs + rhs;
+}
+
 inline std::optional<size_t> read_size(bytes_view data, size_t pos)
 {
     if (pos > data.size() || WORD_SIZE > data.size() - pos) {
@@ -45,7 +53,7 @@ inline std::optional<bytes_view> safe_substr(bytes_view data, size_t pos = 0, si
         return std::nullopt;
     }
 
-    if (len != bytes_view::npos && pos + len > data.size()) {
+    if (len != bytes_view::npos && len > data.size() - pos) {
         return std::nullopt;
     }
 
@@ -143,9 +151,13 @@ inline auto decode(bytes_dyn_t, bytes_view data, size_t& pos)
         throw std::runtime_error("Can not read 'bytes' length");
     }
     const size_t length = *read_length_res;
-    const size_t payload = offset + WORD_SIZE;
+    const auto payload_res = checked_add(offset, WORD_SIZE);
+    if (!payload_res) {
+        throw std::runtime_error("ABI decoder: 'bytes' payload offset overflow");
+    }
+    const size_t payload = *payload_res;
 
-    if (payload + length > data.size()) {
+    if (payload > data.size() || length > data.size() - payload) {
         throw std::runtime_error("ABI decoder: 'bytes' payload out of range");
     }
 
@@ -172,9 +184,13 @@ inline auto decode(string_t, bytes_view data, size_t& pos)
     }
     const size_t length = *read_length_res;
 
-    const size_t payload = offset + WORD_SIZE;
+    const auto payload_res = checked_add(offset, WORD_SIZE);
+    if (!payload_res) {
+        throw std::runtime_error("ABI decoder: 'string' payload offset overflow");
+    }
+    const size_t payload = *payload_res;
 
-    if (payload + length > data.size()) {
+    if (payload > data.size() || length > data.size() - payload) {
         throw std::runtime_error("ABI decoder: 'string' payload out of range");
     }
 
@@ -251,7 +267,11 @@ inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos)
     const size_t length = *read_length_res;
 
     // Get array data
-    const size_t array_data_offset = offset + WORD_SIZE;
+    const auto array_data_offset_res = checked_add(offset, WORD_SIZE);
+    if (!array_data_offset_res) {
+        throw std::runtime_error("ABI decoder: 'variable-length array' data offset overflow");
+    }
+    const size_t array_data_offset = *array_data_offset_res;
     const auto substr_res = safe_substr(data, array_data_offset);
     if (!substr_res) {
         throw std::runtime_error("ABI decoder: can not read 'variable-length array' data");
