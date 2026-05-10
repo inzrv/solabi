@@ -105,6 +105,36 @@ inline std::optional<bytes_view> safe_substr(bytes_view data, size_t pos = 0, si
     return data.substr(pos, len);
 }
 
+inline auto read_dynamic_payload(bytes_view data, size_t& pos, std::string_view type_name)
+    -> bytes_view
+{
+    const auto read_offset_res = read_size(data, pos);
+    if (!read_offset_res) {
+        throw std::runtime_error(std::string{"ABI decoder: can not read '"}.append(type_name).append("' offset"));
+    }
+    pos += WORD_SIZE;
+    const size_t offset = *read_offset_res;
+
+    const auto read_length_res = read_size(data, offset);
+    if (!read_length_res) {
+        throw std::runtime_error(std::string{"ABI decoder: can not read '"}.append(type_name).append("' length"));
+    }
+    const size_t length = *read_length_res;
+
+    const auto payload_res = checked_add(offset, WORD_SIZE);
+    if (!payload_res) {
+        throw std::runtime_error(std::string{"ABI decoder: '"}.append(type_name).append("' payload offset overflow"));
+    }
+    const size_t payload = *payload_res;
+
+    if (payload > data.size() || length > data.size() - payload) {
+        throw std::runtime_error(std::string{"ABI decoder: '"}.append(type_name).append("' payload out of range"));
+    }
+    validate_padded_payload(data, payload, length, type_name);
+
+    return data.substr(payload, length);
+}
+
 // uint<B>
 template <unsigned B>
 requires ValidIntBits<B>
@@ -220,32 +250,8 @@ inline auto decode(bytes_fixed_t<N>, bytes_view data, size_t& pos)
 inline auto decode(bytes_dyn_t, bytes_view data, size_t& pos)
     -> cpp_type<bytes_dyn_t>::type
 {
-    // Get offset
-    const auto read_offset_res = read_size(data, pos);
-    if (!read_offset_res) {
-        throw std::runtime_error("ABI decoder: can not read 'bytes' offset");
-    }
-    pos += WORD_SIZE;
-    size_t offset = *read_offset_res;
-
-     // Get bytes length
-    const auto read_length_res = read_size(data, offset);
-    if (!read_length_res) {
-        throw std::runtime_error("Can not read 'bytes' length");
-    }
-    const size_t length = *read_length_res;
-    const auto payload_res = checked_add(offset, WORD_SIZE);
-    if (!payload_res) {
-        throw std::runtime_error("ABI decoder: 'bytes' payload offset overflow");
-    }
-    const size_t payload = *payload_res;
-
-    if (payload > data.size() || length > data.size() - payload) {
-        throw std::runtime_error("ABI decoder: 'bytes' payload out of range");
-    }
-    validate_padded_payload(data, payload, length, "bytes");
-
-    const auto val = bytes(data.data() + payload, length);
+    const auto payload = read_dynamic_payload(data, pos, "bytes");
+    const auto val = bytes(payload.data(), payload.size());
     return val;
 }
 
@@ -253,36 +259,8 @@ inline auto decode(bytes_dyn_t, bytes_view data, size_t& pos)
 inline auto decode(string_t, bytes_view data, size_t& pos)
     -> cpp_type<string_t>::type
 {
-    // Get offset
-    const auto read_offset_res = read_size(data, pos);
-    if (!read_offset_res) {
-        throw std::runtime_error("ABI decoder: can not read 'string' offset");
-    }
-    pos += WORD_SIZE;
-    size_t offset = *read_offset_res;
-
-     // Get string length
-    const auto read_length_res = read_size(data, offset);
-    if (!read_length_res) {
-        throw std::runtime_error("Can not read 'string' length");
-    }
-    const size_t length = *read_length_res;
-
-    const auto payload_res = checked_add(offset, WORD_SIZE);
-    if (!payload_res) {
-        throw std::runtime_error("ABI decoder: 'string' payload offset overflow");
-    }
-    const size_t payload = *payload_res;
-
-    if (payload > data.size() || length > data.size() - payload) {
-        throw std::runtime_error("ABI decoder: 'string' payload out of range");
-    }
-    validate_padded_payload(data, payload, length, "string");
-
-    const auto first = data.begin() + payload;
-    const auto last = first + length;
-
-    const auto val = std::string(first, last);
+    const auto payload = read_dynamic_payload(data, pos, "string");
+    const auto val = std::string(payload.begin(), payload.end());
     return val;
 }
 
