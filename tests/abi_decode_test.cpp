@@ -227,6 +227,16 @@ TEST(AbiDecoder, DecodesUintSizes)
     }
 }
 
+TEST(AbiDecoder, RejectsUintThatDoesNotFitBitWidth)
+{
+    const auto data = from_hex(
+        "0000000000000000000000000000000000000000000000000000000000000100");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::uint_t<8>>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
+}
+
 TEST(AbiDecoder, DecodesSignedIntsAsTwosComplement)
 {
     {
@@ -247,6 +257,16 @@ TEST(AbiDecoder, DecodesSignedIntsAsTwosComplement)
         EXPECT_EQ(pos, WORD_SIZE);
         EXPECT_EQ(intx::to_string(value, 16), std::string(62, 'f') + "fb");
     }
+}
+
+TEST(AbiDecoder, RejectsInvalidIntSignExtension)
+{
+    const auto data = from_hex(
+        "00000000000000000000000000000000000000000000000000000000000000fb");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::int_t<8>>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
 }
 
 TEST(AbiDecoder, DecodesBoolWord)
@@ -271,6 +291,16 @@ TEST(AbiDecoder, DecodesBoolFalse)
     EXPECT_FALSE(value);
 }
 
+TEST(AbiDecoder, RejectsInvalidBoolEncoding)
+{
+    const auto data = from_hex(
+        "0000000000000000000000000000000000000000000000000000000000000002");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::bool_t>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
+}
+
 TEST(AbiDecoder, DecodesAddress)
 {
     const auto data = from_hex(abi_test_vectors::kAddress);
@@ -280,6 +310,16 @@ TEST(AbiDecoder, DecodesAddress)
 
     EXPECT_EQ(pos, WORD_SIZE);
     EXPECT_EQ(value, from_hex("1111111111111111111111111111111111111111"));
+}
+
+TEST(AbiDecoder, RejectsAddressWithNonZeroPrefix)
+{
+    const auto data = from_hex(
+        "0100000000000000000000001111111111111111111111111111111111111111");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::address_t>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
 }
 
 TEST(AbiDecoder, DecodesFixedBytes)
@@ -304,6 +344,16 @@ TEST(AbiDecoder, DecodesFixedBytes)
     }
 }
 
+TEST(AbiDecoder, RejectsFixedBytesWithNonZeroPadding)
+{
+    const auto data = from_hex(
+        "abcdef0000000000000000000000000000000000000000000000000000000001");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::bytes_fixed_t<3>>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
+}
+
 TEST(AbiDecoder, DecodesDynamicBytes)
 {
     const auto data = from_hex(abi_test_vectors::kBytesDynamic);
@@ -313,6 +363,18 @@ TEST(AbiDecoder, DecodesDynamicBytes)
 
     EXPECT_EQ(pos, WORD_SIZE);
     EXPECT_EQ(value, from_hex("12345678"));
+}
+
+TEST(AbiDecoder, RejectsDynamicBytesWithNonZeroPadding)
+{
+    const auto data = from_hex(
+        "0000000000000000000000000000000000000000000000000000000000000020"
+        "0000000000000000000000000000000000000000000000000000000000000004"
+        "1234567800000000000000000000000000000000000000000000000000000001");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::bytes_dyn_t>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
 }
 
 TEST(AbiDecoder, DecodesEmptyDynamicValues)
@@ -378,6 +440,18 @@ TEST(AbiDecoder, DecodesString)
 
     EXPECT_EQ(pos, WORD_SIZE);
     EXPECT_EQ(value, "hi");
+}
+
+TEST(AbiDecoder, RejectsStringWithNonZeroPadding)
+{
+    const auto data = from_hex(
+        "0000000000000000000000000000000000000000000000000000000000000020"
+        "0000000000000000000000000000000000000000000000000000000000000002"
+        "6869000000000000000000000000000000000000000000000000000000000001");
+
+    size_t pos = 0;
+    EXPECT_THROW((solabi::decode<solabi::string_t>(bytes_view{data.data(), data.size()}, pos)),
+                 std::runtime_error);
 }
 
 TEST(AbiDecoder, DecodesStaticFixedArray)

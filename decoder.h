@@ -6,6 +6,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -22,6 +23,50 @@ inline std::optional<size_t> checked_add(size_t lhs, size_t rhs)
         return std::nullopt;
     }
     return lhs + rhs;
+}
+
+inline bool bytes_are(bytes_view data, size_t begin, size_t end, uint8_t expected)
+{
+    for (size_t i = begin; i < end; ++i) {
+        if (data[i] != expected) {
+            return false;
+        }
+    }
+    return true;
+}
+
+inline size_t padding_size(size_t length)
+{
+    return (WORD_SIZE - (length % WORD_SIZE)) % WORD_SIZE;
+}
+
+inline void validate_padded_payload(bytes_view data, size_t payload, size_t length, std::string_view type_name)
+{
+    const auto padded_length_res = checked_add(length, padding_size(length));
+    if (!padded_length_res) {
+        throw std::runtime_error(std::string{"ABI decoder: '"}.append(type_name).append("' padded payload length overflow"));
+    }
+    const size_t padded_length = *padded_length_res;
+
+    if (payload > data.size() || padded_length > data.size() - payload) {
+        throw std::runtime_error(std::string{"ABI decoder: '"}.append(type_name).append("' padded payload out of range"));
+    }
+
+    const auto padding_begin_res = checked_add(payload, length);
+    if (!padding_begin_res) {
+        throw std::runtime_error(std::string{"ABI decoder: '"}.append(type_name).append("' padding offset overflow"));
+    }
+    const size_t padding_begin = *padding_begin_res;
+
+    const auto padding_end_res = checked_add(payload, padded_length);
+    if (!padding_end_res) {
+        throw std::runtime_error(std::string{"ABI decoder: '"}.append(type_name).append("' padding end overflow"));
+    }
+    const size_t padding_end = *padding_end_res;
+
+    if (!bytes_are(data, padding_begin, padding_end, uint8_t{0})) {
+        throw std::runtime_error(std::string{"ABI decoder: non-zero '"}.append(type_name).append("' padding"));
+    }
 }
 
 inline std::optional<size_t> read_size(bytes_view data, size_t pos)
@@ -73,6 +118,13 @@ inline auto decode(uint_t<B>, bytes_view data, size_t& pos)
     const auto word = *substr_res;
     pos += WORD_SIZE;
 
+    constexpr size_t value_bytes = B / 8;
+    if constexpr (value_bytes < WORD_SIZE) {
+        if (!bytes_are(word, 0, WORD_SIZE - value_bytes, uint8_t{0})) {
+            throw std::runtime_error("ABI decoder: 'uint' value does not fit into requested bit width");
+        }
+    }
+
     const auto val = intx::be::load<intx::uint256>(*reinterpret_cast<const uint8_t(*)[WORD_SIZE]>(word.data()));
     return val;
 }
@@ -83,7 +135,24 @@ requires ValidIntBits<B>
 inline auto decode(int_t<B>, bytes_view data, size_t& pos)
     -> typename cpp_type<int_t<B>>::type
 {
-    return decode(uint_t<B>{}, data, pos);
+    const auto substr_res = safe_substr(data, pos, WORD_SIZE);
+    if (!substr_res) {
+        throw std::runtime_error("ABI decoder: can not read 'int' data");
+    }
+    const auto word = *substr_res;
+    pos += WORD_SIZE;
+
+    constexpr size_t value_bytes = B / 8;
+    if constexpr (value_bytes < WORD_SIZE) {
+        const size_t sign_byte_index = WORD_SIZE - value_bytes;
+        const uint8_t expected_prefix = (word[sign_byte_index] & 0x80) != 0 ? uint8_t{0xff} : uint8_t{0};
+        if (!bytes_are(word, 0, sign_byte_index, expected_prefix)) {
+            throw std::runtime_error("ABI decoder: invalid 'int' sign extension");
+        }
+    }
+
+    const auto val = intx::be::load<intx::uint256>(*reinterpret_cast<const uint8_t(*)[WORD_SIZE]>(word.data()));
+    return val;
 }
 
 // bool
@@ -97,7 +166,11 @@ inline auto decode(bool_t, bytes_view data, size_t& pos)
     const auto word = *substr_res;
     pos += WORD_SIZE;
 
-    const bool val = word.back() == 0x0 ? false : true;
+    if (!bytes_are(word, 0, WORD_SIZE - 1, uint8_t{0}) || (word.back() != 0 && word.back() != 1)) {
+        throw std::runtime_error("ABI decoder: invalid 'bool' value");
+    }
+
+    const bool val = word.back() == 1;
     return val;
 }
 
@@ -111,6 +184,10 @@ inline auto decode(address_t, bytes_view data, size_t& pos)
     }
     const auto word = *substr_res;
     pos += WORD_SIZE;
+
+    if (!bytes_are(word, 0, WORD_SIZE - ADDRESS_LENGTH, uint8_t{0})) {
+        throw std::runtime_error("ABI decoder: non-zero 'address' prefix");
+    }
 
     const auto val = bytes(word.data() + word.size() - ADDRESS_LENGTH, ADDRESS_LENGTH);
     return val;
@@ -128,6 +205,12 @@ inline auto decode(bytes_fixed_t<N>, bytes_view data, size_t& pos)
     }
     const auto word = *substr_res;
     pos += WORD_SIZE;
+
+    if constexpr (N < WORD_SIZE) {
+        if (!bytes_are(word, N, WORD_SIZE, uint8_t{0})) {
+            throw std::runtime_error("ABI decoder: non-zero 'static bytes' padding");
+        }
+    }
 
     const auto val = bytes(word.data(), N);
     return val;
@@ -160,6 +243,7 @@ inline auto decode(bytes_dyn_t, bytes_view data, size_t& pos)
     if (payload > data.size() || length > data.size() - payload) {
         throw std::runtime_error("ABI decoder: 'bytes' payload out of range");
     }
+    validate_padded_payload(data, payload, length, "bytes");
 
     const auto val = bytes(data.data() + payload, length);
     return val;
@@ -193,6 +277,7 @@ inline auto decode(string_t, bytes_view data, size_t& pos)
     if (payload > data.size() || length > data.size() - payload) {
         throw std::runtime_error("ABI decoder: 'string' payload out of range");
     }
+    validate_padded_payload(data, payload, length, "string");
 
     const auto first = data.begin() + payload;
     const auto last = first + length;
