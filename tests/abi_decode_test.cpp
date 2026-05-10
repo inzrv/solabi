@@ -1,4 +1,5 @@
 #include "decoder.h"
+#include "utils.h"
 #include "abi_vectors.h"
 
 #include <gtest/gtest.h>
@@ -6,7 +7,6 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -170,36 +170,7 @@ static_assert(std::is_same_v<solabi::cpp_type<solabi::dyn_array_t<solabi::bool_t
 
 namespace
 {
-int hex_value(char c)
-{
-    if (c >= '0' && c <= '9') {
-        return c - '0';
-    }
-    if (c >= 'a' && c <= 'f') {
-        return c - 'a' + 10;
-    }
-    if (c >= 'A' && c <= 'F') {
-        return c - 'A' + 10;
-    }
-    throw std::invalid_argument("invalid hex character");
-}
-
-bytes from_hex(std::string_view hex)
-{
-    if (hex.starts_with("0x")) {
-        hex.remove_prefix(2);
-    }
-    if (hex.size() % 2 != 0) {
-        throw std::invalid_argument("hex string must contain an even number of digits");
-    }
-
-    bytes data;
-    data.reserve(hex.size() / 2);
-    for (size_t i = 0; i < hex.size(); i += 2) {
-        data.push_back(static_cast<uint8_t>((hex_value(hex[i]) << 4) | hex_value(hex[i + 1])));
-    }
-    return data;
-}
+using solabi::from_hex;
 } // namespace
 
 TEST(AbiDecoder, DecodesUintWord)
@@ -211,6 +182,18 @@ TEST(AbiDecoder, DecodesUintWord)
 
     EXPECT_EQ(pos, WORD_SIZE);
     EXPECT_TRUE(value == intx::uint256{42});
+}
+
+TEST(AbiDecoder, FromHexAcceptsPrefixesAndMixedCase)
+{
+    EXPECT_EQ(from_hex("0xAbCd"), from_hex("abcd"));
+    EXPECT_EQ(from_hex("0X1234"), from_hex("1234"));
+}
+
+TEST(AbiDecoder, FromHexRejectsMalformedInput)
+{
+    EXPECT_THROW(from_hex("abc"), std::invalid_argument);
+    EXPECT_THROW(from_hex("0xzz"), std::invalid_argument);
 }
 
 TEST(AbiDecoder, DecodesUintSizes)
