@@ -1,6 +1,6 @@
 #pragma once
 
-#include "decoder.h"
+#include <solabi/decoder.h>
 
 #include <string>
 #include <utility>

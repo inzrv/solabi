@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include <solabi/common.h>
 
 #include <cstddef>
 #include <stdexcept>

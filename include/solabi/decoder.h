@@ -1,6 +1,6 @@
 #pragma once
 
-#include "decoder_fwd.h"
+#include <solabi/decoder_fwd.h>
 
 #include <cstddef>
 #include <optional>

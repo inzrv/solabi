@@ -13,7 +13,7 @@ add_library(abi_decoder::abi_decoder ALIAS abi_decoder)
 
 target_compile_features(abi_decoder INTERFACE cxx_std_20)
 target_include_directories(abi_decoder INTERFACE
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(abi_decoder INTERFACE intx::intx)

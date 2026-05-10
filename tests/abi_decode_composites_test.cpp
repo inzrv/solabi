@@ -1,5 +1,5 @@
-#include "decoder.h"
-#include "utils.h"
+#include <solabi/decoder.h>
+#include <solabi/utils.h>
 #include "abi_vectors.h"
 #include "test_types.h"
 
