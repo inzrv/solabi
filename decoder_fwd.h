@@ -34,6 +34,10 @@ inline auto decode(bytes_dyn_t, bytes_view data, size_t& pos) -> cpp_type<bytes_
 // string
 inline auto decode(string_t, bytes_view data, size_t& pos) -> cpp_type<string_t>::type;
 
+// User-defined C++ type with `abi_tag`
+template<HasAbiTupleTag T>
+inline auto decode(T, bytes_view data, size_t& pos) -> typename cpp_type<T>::type;
+
 // <T>[N]: fixed-length array of elements of the given type
 template<class T, size_t N>
 inline auto decode(array_t<T, N>, bytes_view data, size_t& pos) -> typename cpp_type<array_t<T, N>>::type;
@@ -59,11 +63,11 @@ inline auto decode(bytes_view data, size_t& pos) -> typename cpp_type<Tag>::type
 template<AbiTag Tag>
 inline auto decode(bytes_view data) -> typename cpp_type<Tag>::type;
 
-template<HasAbiTag T>
+template<HasAbiTupleTag T>
 inline auto from_tuple(typename ::solabi::cpp_type<typename T::abi_tag>::type tup) -> T;
 
 template<class T>
-requires HasAbiTag<T>
+requires HasAbiTupleTag<T>
 inline auto decode_as(bytes_view data, size_t& pos) -> T;
 
 } // namespace solabi

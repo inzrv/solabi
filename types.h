@@ -77,6 +77,29 @@ struct tuple_t
 template<class Sol>
 struct cpp_type;
 
+template<class T>
+concept HasAbiTag = requires { typename T::abi_tag; };
+
+template<class Tag>
+struct is_tuple_tag : std::false_type {};
+
+template<class... Ts>
+struct is_tuple_tag<tuple_t<Ts...>> : std::true_type {};
+
+template<class T, bool = HasAbiTag<T>>
+struct has_abi_tuple_tag : std::false_type {};
+
+template<class T>
+struct has_abi_tuple_tag<T, true>
+{
+    static constexpr bool value =
+        is_tuple_tag<typename T::abi_tag>::value &&
+        requires { typename cpp_type<typename T::abi_tag>::type; };
+};
+
+template<class T>
+concept HasAbiTupleTag = has_abi_tuple_tag<T>::value;
+
 template<unsigned B>
 requires ValidIntBits<B>
 struct cpp_type<uint_t<B>>
@@ -141,6 +164,12 @@ struct cpp_type<tuple_t<Ts...>>
     using type = std::tuple<typename cpp_type<Ts>::type...>;
 };
 
+template<HasAbiTupleTag T>
+struct cpp_type<T>
+{
+    using type = T;
+};
+
 // Utils
 
 template<class Tag>
@@ -179,14 +208,14 @@ struct is_static<dyn_array_t<E>> : std::false_type {};
 template<class... Ts>
 struct is_static<tuple_t<Ts...>> : std::bool_constant<(is_static<Ts>::value && ...)> {};
 
+template<HasAbiTupleTag T>
+struct is_static<T> : is_static<typename T::abi_tag> {};
+
 template<class Tag>
 inline constexpr bool is_static_v = is_static<Tag>::value;
 
 // Common concept for ABI type tags
 template<class T>
 concept AbiTag = requires { typename cpp_type<T>::type; };
-
-template<class T>
-concept HasAbiTag = requires { typename T::abi_tag; };
 
 } // namespace solabi

@@ -26,7 +26,7 @@ if(ABI_DECODER_BUILD_TESTS)
     add_subdirectory(third_party/googletest)
 
     add_executable(abi_decoder_tests
-        tests/smoke_test.cpp
+        tests/abi_decode_test.cpp
     )
     target_link_libraries(abi_decoder_tests
         PRIVATE
