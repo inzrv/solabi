@@ -15,57 +15,61 @@ namespace solabi
 {
 // Concepts
 
-template<unsigned Bits>
+template <unsigned Bits>
 concept ValidIntBits = (Bits % 8 == 0) && (Bits >= 8 && Bits <= 256);
 
-template<unsigned N>
+template <unsigned N>
 concept ValidBytesN = (N >= 1 && N <= 32);
 
 // Type tags
 
-template<unsigned Bits>
+template <unsigned Bits>
 requires ValidIntBits<Bits>
 struct uint_t
 {
     static constexpr unsigned bits = Bits;
 };
 
-template<unsigned Bits>
+template <unsigned Bits>
 requires ValidIntBits<Bits>
 struct int_t
 {
     static constexpr unsigned bits = Bits;
 };
 
-struct bool_t {};
+struct bool_t
+{};
 
-struct address_t {};
+struct address_t
+{};
 
-template<unsigned N>
+template <unsigned N>
 requires ValidBytesN<N>
 struct bytes_fixed_t
 {
     static constexpr unsigned size = N;
 };
 
-struct bytes_dyn_t {};
+struct bytes_dyn_t
+{};
 
-struct string_t {};
+struct string_t
+{};
 
-template<class T, size_t N>
+template <class T, size_t N>
 struct array_t
 {
     using element = T;
     static constexpr size_t length = N;
 };
 
-template<class T>
+template <class T>
 struct dyn_array_t
 {
     using element = T;
 };
 
-template<class... Ts>
+template <class... Ts>
 struct tuple_t
 {
     using elements = std::tuple<Ts...>;
@@ -74,97 +78,99 @@ struct tuple_t
 
 // Carrier types
 
-template<class Sol>
+template <class Sol>
 struct cpp_type;
 
-template<class T>
+template <class T>
 concept HasAbiTag = requires { typename T::abi_tag; };
 
-template<class Tag>
-struct is_tuple_tag : std::false_type {};
+template <class Tag>
+struct is_tuple_tag : std::false_type
+{};
 
-template<class... Ts>
-struct is_tuple_tag<tuple_t<Ts...>> : std::true_type {};
+template <class... Ts>
+struct is_tuple_tag<tuple_t<Ts...>> : std::true_type
+{};
 
-template<class T, bool = HasAbiTag<T>>
-struct has_abi_tuple_tag : std::false_type {};
+template <class T, bool = HasAbiTag<T>>
+struct has_abi_tuple_tag : std::false_type
+{};
 
-template<class T>
+template <class T>
 struct has_abi_tuple_tag<T, true>
 {
-    static constexpr bool value =
-        is_tuple_tag<typename T::abi_tag>::value &&
-        requires { typename cpp_type<typename T::abi_tag>::type; };
+    static constexpr bool value = is_tuple_tag<typename T::abi_tag>::value &&
+                                  requires { typename cpp_type<typename T::abi_tag>::type; };
 };
 
-template<class T>
+template <class T>
 concept HasAbiTupleTag = has_abi_tuple_tag<T>::value;
 
-template<unsigned B>
+template <unsigned B>
 requires ValidIntBits<B>
 struct cpp_type<uint_t<B>>
 {
     using type = intx::uint256;
 };
 
-template<unsigned B>
+template <unsigned B>
 requires ValidIntBits<B>
-struct cpp_type<int_t<B>> 
+struct cpp_type<int_t<B>>
 {
     // Two’s complement representation
     using type = intx::uint256;
 };
 
-template<>
+template <>
 struct cpp_type<bool_t>
 {
     using type = bool;
 };
 
-template<>
+template <>
 struct cpp_type<address_t>
 {
     using type = bytes;
 };
 
-template<unsigned N>
+template <unsigned N>
 requires ValidBytesN<N>
 struct cpp_type<bytes_fixed_t<N>>
 {
     using type = bytes;
 };
 
-template<>
+template <>
 struct cpp_type<bytes_dyn_t>
 {
     using type = bytes;
 };
 
-template<>
+template <>
 struct cpp_type<string_t>
 {
     using type = std::string;
 };
 
-template<class T, size_t N>
+template <class T, size_t N>
 struct cpp_type<array_t<T, N>>
 {
     using type = std::array<typename cpp_type<T>::type, N>;
 };
 
-template<class T>
+template <class T>
 struct cpp_type<dyn_array_t<T>>
 {
     using type = std::vector<typename cpp_type<T>::type>;
 };
 
-template<class... Ts>
+template <class... Ts>
 struct cpp_type<tuple_t<Ts...>>
 {
     using type = std::tuple<typename cpp_type<Ts>::type...>;
 };
 
-template<HasAbiTupleTag T>
+template <HasAbiTupleTag T>
 struct cpp_type<T>
 {
     using type = T;
@@ -172,50 +178,62 @@ struct cpp_type<T>
 
 // Utils
 
-template<class Tag>
-struct is_static : std::false_type {};
+template <class Tag>
+struct is_static : std::false_type
+{};
 
 template <unsigned B>
 requires ValidIntBits<B>
-struct is_static<uint_t<B>> : std::true_type {};
+struct is_static<uint_t<B>> : std::true_type
+{};
 
 template <unsigned B>
 requires ValidIntBits<B>
-struct is_static<int_t<B>> : std::true_type {};
+struct is_static<int_t<B>> : std::true_type
+{};
 
-template<>
-struct is_static<bool_t> : std::true_type {};
+template <>
+struct is_static<bool_t> : std::true_type
+{};
 
-template<>
-struct is_static<address_t> : std::true_type {};
+template <>
+struct is_static<address_t> : std::true_type
+{};
 
 template <unsigned N>
 requires ValidBytesN<N>
-struct is_static<bytes_fixed_t<N>> : std::true_type {};
+struct is_static<bytes_fixed_t<N>> : std::true_type
+{};
 
-template<>
-struct is_static<bytes_dyn_t> : std::false_type {};
+template <>
+struct is_static<bytes_dyn_t> : std::false_type
+{};
 
-template<>
-struct is_static<string_t> : std::false_type {};
+template <>
+struct is_static<string_t> : std::false_type
+{};
 
-template<class E, size_t N>
-struct is_static<array_t<E,N>> : is_static<E> {};
+template <class E, size_t N>
+struct is_static<array_t<E, N>> : is_static<E>
+{};
 
-template<class E>
-struct is_static<dyn_array_t<E>> : std::false_type {};
+template <class E>
+struct is_static<dyn_array_t<E>> : std::false_type
+{};
 
-template<class... Ts>
-struct is_static<tuple_t<Ts...>> : std::bool_constant<(is_static<Ts>::value && ...)> {};
+template <class... Ts>
+struct is_static<tuple_t<Ts...>> : std::bool_constant<(is_static<Ts>::value && ...)>
+{};
 
-template<HasAbiTupleTag T>
-struct is_static<T> : is_static<typename T::abi_tag> {};
+template <HasAbiTupleTag T>
+struct is_static<T> : is_static<typename T::abi_tag>
+{};
 
-template<class Tag>
+template <class Tag>
 inline constexpr bool is_static_v = is_static<Tag>::value;
 
 // Common concept for ABI type tags
-template<class T>
+template <class T>
 concept AbiTag = requires { typename cpp_type<T>::type; };
 
 } // namespace solabi

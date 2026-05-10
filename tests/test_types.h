@@ -53,7 +53,8 @@ struct ConstructorRecord
 
     ConstructorRecord() = default;
     ConstructorRecord(intx::uint256 id_, std::string label_)
-        : id{id_}, label{std::move(label_)}
+        : id{id_},
+          label{std::move(label_)}
     {}
 
     intx::uint256 id;
@@ -91,7 +92,8 @@ struct NoDefaultRecord
     using abi_tag = solabi::tuple_t<solabi::uint_t<256>, solabi::bool_t>;
 
     NoDefaultRecord(intx::uint256 id_, bool active_)
-        : id{id_}, active{active_}
+        : id{id_},
+          active{active_}
     {}
 
     intx::uint256 id;

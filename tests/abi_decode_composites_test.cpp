@@ -16,8 +16,7 @@ using solabi::from_hex;
 
 TEST(AbiDecoderComposites, RejectsDynamicArrayWithOffsetOverflow)
 {
-    const auto data = from_hex(
-        "000000000000000000000000000000000000000000000000fffffffffffffff0");
+    const auto data = from_hex("000000000000000000000000000000000000000000000000fffffffffffffff0");
 
     size_t pos = 0;
     EXPECT_THROW((solabi::decode<solabi::dyn_array_t<solabi::uint_t<256>>>(
@@ -135,8 +134,8 @@ TEST(AbiDecoderComposites, DecodesStaticStructFixedArray)
     const auto data = from_hex(abi_test_vectors::kStaticRecordArray2);
 
     size_t pos = 0;
-    const auto value = solabi::decode<solabi::array_t<StaticRecord, 2>>(
-        bytes_view{data.data(), data.size()}, pos);
+    const auto value =
+        solabi::decode<solabi::array_t<StaticRecord, 2>>(bytes_view{data.data(), data.size()}, pos);
 
     EXPECT_EQ(pos, WORD_SIZE * 4);
     EXPECT_TRUE(value[0].id == intx::uint256{1});
@@ -213,7 +212,8 @@ TEST(AbiDecoderComposites, DecodesNestedStaticStruct)
     const auto data = from_hex(abi_test_vectors::kNestedStaticRecord);
 
     size_t pos = 0;
-    const auto value = solabi::decode<NestedStaticRecord>(bytes_view{data.data(), data.size()}, pos);
+    const auto value =
+        solabi::decode<NestedStaticRecord>(bytes_view{data.data(), data.size()}, pos);
 
     EXPECT_EQ(pos, WORD_SIZE * 3);
     EXPECT_TRUE(value.owner.id == intx::uint256{9});
@@ -226,7 +226,8 @@ TEST(AbiDecoderComposites, DecodesNestedDynamicStruct)
     const auto data = from_hex(abi_test_vectors::kNestedDynamicRecord);
 
     size_t pos = 0;
-    const auto value = solabi::decode<NestedDynamicRecord>(bytes_view{data.data(), data.size()}, pos);
+    const auto value =
+        solabi::decode<NestedDynamicRecord>(bytes_view{data.data(), data.size()}, pos);
 
     EXPECT_EQ(pos, WORD_SIZE);
     EXPECT_TRUE(value.owner.id == intx::uint256{9});

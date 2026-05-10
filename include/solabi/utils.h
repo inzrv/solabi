@@ -37,8 +37,8 @@ inline bytes from_hex(std::string_view hex)
     bytes data;
     data.reserve(hex.size() / 2);
     for (size_t i = 0; i < hex.size(); i += 2) {
-        data.push_back(static_cast<uint8_t>(
-            (internal::hex_value(hex[i]) << 4) | internal::hex_value(hex[i + 1])));
+        data.push_back(static_cast<uint8_t>((internal::hex_value(hex[i]) << 4) |
+                                            internal::hex_value(hex[i + 1])));
     }
     return data;
 }

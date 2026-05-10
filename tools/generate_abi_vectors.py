@@ -76,6 +76,8 @@ def print_vector(name: str, abi_types: list[str], values: list[object]) -> None:
 def main() -> None:
     print("#pragma once")
     print()
+    print("// clang-format off")
+    print()
     print("#include <string_view>")
     print()
     print("namespace abi_test_vectors")
@@ -83,6 +85,8 @@ def main() -> None:
     for name, abi_types, values in VECTORS:
         print_vector(name, abi_types, values)
     print("} // namespace abi_test_vectors")
+    print()
+    print("// clang-format on")
 
 
 if __name__ == "__main__":

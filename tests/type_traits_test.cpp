@@ -9,15 +9,13 @@
 #include <utility>
 #include <vector>
 
-template<class T, class Tuple, size_t... Is>
+template <class T, class Tuple, size_t... Is>
 constexpr bool brace_constructible_from_tuple(std::index_sequence<Is...>)
 {
-    return requires {
-        T{std::declval<std::tuple_element_t<Is, Tuple>>()...};
-    };
+    return requires { T{std::declval<std::tuple_element_t<Is, Tuple>>()...}; };
 }
 
-template<class T>
+template <class T>
 constexpr bool is_currently_usable_user_abi_type()
 {
     if constexpr (!solabi::HasAbiTupleTag<T>) {
@@ -25,7 +23,8 @@ constexpr bool is_currently_usable_user_abi_type()
     } else {
         using Tuple = solabi::cpp_type<typename T::abi_tag>::type;
         return std::default_initializable<T> &&
-            brace_constructible_from_tuple<T, Tuple>(std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+               brace_constructible_from_tuple<T, Tuple>(
+                   std::make_index_sequence<std::tuple_size_v<Tuple>>{});
     }
 }
 
@@ -69,4 +68,5 @@ static_assert(std::is_same_v<solabi::cpp_type<solabi::dyn_array_t<DynamicRecord>
                              std::vector<DynamicRecord>>);
 static_assert(std::is_same_v<solabi::cpp_type<solabi::dyn_array_t<NestedDynamicRecord>>::type,
                              std::vector<NestedDynamicRecord>>);
-static_assert(std::is_same_v<solabi::cpp_type<solabi::dyn_array_t<solabi::bool_t>>::type, std::vector<bool>>);
+static_assert(
+    std::is_same_v<solabi::cpp_type<solabi::dyn_array_t<solabi::bool_t>>::type, std::vector<bool>>);

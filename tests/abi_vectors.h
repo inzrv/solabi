@@ -1,5 +1,7 @@
 #pragma once
 
+// clang-format off
+
 #include <string_view>
 
 namespace abi_test_vectors
@@ -210,3 +212,5 @@ inline constexpr std::string_view kNestedDynamicRecordArray2 =
     "7365636f6e640000000000000000000000000000000000000000000000000000";
 
 } // namespace abi_test_vectors
+
+// clang-format on
