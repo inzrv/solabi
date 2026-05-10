@@ -1,3 +1,5 @@
+![](./solabi.png)
+
 # solabi
 
 Header-only C++20 decoder for Solidity ABI values.
