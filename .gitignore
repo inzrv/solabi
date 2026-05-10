@@ -1,3 +1,30 @@
+# CMake
 build/
 cmake-build-*/
+out/
+install/
+compile_commands.json
+CMakeUserPresets.json
+Testing/
+
+# C/C++ artifacts
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Coverage / profiling
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+
+# Python helper scripts
+__pycache__/
+*.pyc
+
+# System
 .DS_Store
