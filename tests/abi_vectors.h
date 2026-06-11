@@ -9,7 +9,7 @@
 
 namespace abi_test_vectors
 {
-inline constexpr std::string_view kUint256_42 =
+inline constexpr std::string_view kUint25642 =
     "000000000000000000000000000000000000000000000000000000000000002a";
 
 inline constexpr std::string_view kUint8Max =

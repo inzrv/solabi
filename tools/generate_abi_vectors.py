@@ -16,7 +16,7 @@ except ImportError as exc:
 
 
 VECTORS = [
-    ("kUint256_42", ["uint256"], [42]),
+    ("kUint25642", ["uint256"], [42]),
     ("kUint8Max", ["uint8"], [255]),
     ("kUint64Pattern", ["uint64"], [0x1122334455667788]),
     ("kInt256Minus1", ["int256"], [-1]),

@@ -23,7 +23,7 @@ TEST(AbiDecoderComposites, RejectsDynamicArrayWithOffsetOverflow)
 
     size_t pos = 0;
     EXPECT_THROW((solabi::decode<solabi::dyn_array_t<solabi::uint_t<256>>>(
-                     bytes_view{data.data(), data.size()}, pos)),
+                     solabi::bytes_view{data.data(), data.size()}, pos)),
                  std::runtime_error);
 }
 
@@ -33,9 +33,9 @@ TEST(AbiDecoderComposites, DecodesStaticFixedArray)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::array_t<solabi::uint_t<256>, 3>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE * 3);
+    EXPECT_EQ(pos, solabi::kWordSize * 3);
     EXPECT_TRUE(value[0] == intx::uint256{1});
     EXPECT_TRUE(value[1] == intx::uint256{2});
     EXPECT_TRUE(value[2] == intx::uint256{3});
@@ -47,9 +47,9 @@ TEST(AbiDecoderComposites, DecodesDynamicFixedArray)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::array_t<solabi::string_t, 2>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     EXPECT_EQ(value[0], "hi");
     EXPECT_EQ(value[1], "bye");
 }
@@ -60,9 +60,9 @@ TEST(AbiDecoderComposites, DecodesDynamicArray)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::dyn_array_t<solabi::uint_t<256>>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     ASSERT_EQ(value.size(), 3);
     EXPECT_TRUE(value[0] == intx::uint256{1});
     EXPECT_TRUE(value[1] == intx::uint256{2});
@@ -75,9 +75,9 @@ TEST(AbiDecoderComposites, DecodesDynamicTuple)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::tuple_t<solabi::uint_t<256>, solabi::string_t>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     EXPECT_TRUE(std::get<0>(value) == intx::uint256{7});
     EXPECT_EQ(std::get<1>(value), "hi");
 }
@@ -87,9 +87,10 @@ TEST(AbiDecoderComposites, DecodesStaticStruct)
     const auto data = from_hex(abi_test_vectors::kStaticRecord);
 
     size_t pos = 0;
-    const auto value = solabi::decode<StaticRecord>(bytes_view{data.data(), data.size()}, pos);
+    const auto value =
+        solabi::decode<StaticRecord>(solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE * 2);
+    EXPECT_EQ(pos, solabi::kWordSize * 2);
     EXPECT_TRUE(value.id == intx::uint256{9});
     EXPECT_TRUE(value.active);
 }
@@ -99,9 +100,10 @@ TEST(AbiDecoderComposites, DecodesDynamicStructAsAbiTag)
     const auto data = from_hex(abi_test_vectors::kTupleUint256String);
 
     size_t pos = 0;
-    const auto value = solabi::decode<DynamicRecord>(bytes_view{data.data(), data.size()}, pos);
+    const auto value =
+        solabi::decode<DynamicRecord>(solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     EXPECT_TRUE(value.id == intx::uint256{7});
     EXPECT_EQ(value.label, "hi");
 }
@@ -111,9 +113,10 @@ TEST(AbiDecoderComposites, DecodesUserDefinedTypeWithConstructor)
     const auto data = from_hex(abi_test_vectors::kTupleUint256String);
 
     size_t pos = 0;
-    const auto value = solabi::decode<ConstructorRecord>(bytes_view{data.data(), data.size()}, pos);
+    const auto value =
+        solabi::decode<ConstructorRecord>(solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     EXPECT_TRUE(value.id == intx::uint256{7});
     EXPECT_EQ(value.label, "hi");
 }
@@ -124,9 +127,9 @@ TEST(AbiDecoderComposites, DecodesStringDynamicArray)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::dyn_array_t<solabi::string_t>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     ASSERT_EQ(value.size(), 2);
     EXPECT_EQ(value[0], "hi");
     EXPECT_EQ(value[1], "bye");
@@ -137,10 +140,10 @@ TEST(AbiDecoderComposites, DecodesStaticStructFixedArray)
     const auto data = from_hex(abi_test_vectors::kStaticRecordArray2);
 
     size_t pos = 0;
-    const auto value =
-        solabi::decode<solabi::array_t<StaticRecord, 2>>(bytes_view{data.data(), data.size()}, pos);
+    const auto value = solabi::decode<solabi::array_t<StaticRecord, 2>>(
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE * 4);
+    EXPECT_EQ(pos, solabi::kWordSize * 4);
     EXPECT_TRUE(value[0].id == intx::uint256{1});
     EXPECT_TRUE(value[0].active);
     EXPECT_TRUE(value[1].id == intx::uint256{2});
@@ -153,9 +156,9 @@ TEST(AbiDecoderComposites, DecodesDynamicStructFixedArray)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::array_t<DynamicRecord, 2>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     EXPECT_TRUE(value[0].id == intx::uint256{1});
     EXPECT_EQ(value[0].label, "one");
     EXPECT_TRUE(value[1].id == intx::uint256{2});
@@ -168,9 +171,9 @@ TEST(AbiDecoderComposites, DecodesDynamicStructDynamicArray)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::dyn_array_t<DynamicRecord>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     ASSERT_EQ(value.size(), 2);
     EXPECT_TRUE(value[0].id == intx::uint256{1});
     EXPECT_EQ(value[0].label, "one");
@@ -184,9 +187,9 @@ TEST(AbiDecoderComposites, DecodesDynamicArrayOfFixedArrays)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::dyn_array_t<solabi::array_t<solabi::uint_t<256>, 2>>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     ASSERT_EQ(value.size(), 2);
     EXPECT_TRUE(value[0][0] == intx::uint256{1});
     EXPECT_TRUE(value[0][1] == intx::uint256{2});
@@ -200,9 +203,9 @@ TEST(AbiDecoderComposites, DecodesFixedArrayOfDynamicArrays)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::array_t<solabi::dyn_array_t<solabi::uint_t<256>>, 2>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     ASSERT_EQ(value[0].size(), 2);
     ASSERT_EQ(value[1].size(), 1);
     EXPECT_TRUE(value[0][0] == intx::uint256{1});
@@ -216,9 +219,9 @@ TEST(AbiDecoderComposites, DecodesNestedStaticStruct)
 
     size_t pos = 0;
     const auto value =
-        solabi::decode<NestedStaticRecord>(bytes_view{data.data(), data.size()}, pos);
+        solabi::decode<NestedStaticRecord>(solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE * 3);
+    EXPECT_EQ(pos, solabi::kWordSize * 3);
     EXPECT_TRUE(value.owner.id == intx::uint256{9});
     EXPECT_TRUE(value.owner.active);
     EXPECT_TRUE(value.score == intx::uint256{11});
@@ -230,9 +233,9 @@ TEST(AbiDecoderComposites, DecodesNestedDynamicStruct)
 
     size_t pos = 0;
     const auto value =
-        solabi::decode<NestedDynamicRecord>(bytes_view{data.data(), data.size()}, pos);
+        solabi::decode<NestedDynamicRecord>(solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     EXPECT_TRUE(value.owner.id == intx::uint256{9});
     EXPECT_TRUE(value.owner.active);
     EXPECT_TRUE(value.payload.id == intx::uint256{7});
@@ -245,9 +248,10 @@ TEST(AbiDecoderComposites, DecodesDeepNestedStruct)
     const auto data = from_hex(abi_test_vectors::kDeepRecord);
 
     size_t pos = 0;
-    const auto value = solabi::decode<DeepRecord>(bytes_view{data.data(), data.size()}, pos);
+    const auto value =
+        solabi::decode<DeepRecord>(solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     EXPECT_TRUE(value.nested.owner.id == intx::uint256{9});
     EXPECT_TRUE(value.nested.owner.active);
     EXPECT_TRUE(value.nested.payload.id == intx::uint256{7});
@@ -266,9 +270,9 @@ TEST(AbiDecoderComposites, DecodesNestedDynamicStructArray)
 
     size_t pos = 0;
     const auto value = solabi::decode<solabi::dyn_array_t<NestedDynamicRecord>>(
-        bytes_view{data.data(), data.size()}, pos);
+        solabi::bytes_view{data.data(), data.size()}, pos);
 
-    EXPECT_EQ(pos, WORD_SIZE);
+    EXPECT_EQ(pos, solabi::kWordSize);
     ASSERT_EQ(value.size(), 2);
     EXPECT_TRUE(value[0].owner.id == intx::uint256{1});
     EXPECT_TRUE(value[0].owner.active);

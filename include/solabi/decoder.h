@@ -40,7 +40,7 @@ inline bool bytes_are(bytes_view data, size_t begin, size_t end, uint8_t expecte
 
 inline size_t padding_size(size_t length)
 {
-    return (WORD_SIZE - (length % WORD_SIZE)) % WORD_SIZE;
+    return (kWordSize - (length % kWordSize)) % kWordSize;
 }
 
 inline void validate_padded_payload(bytes_view data,
@@ -82,20 +82,20 @@ inline void validate_padded_payload(bytes_view data,
 
 inline std::optional<size_t> read_size(bytes_view data, size_t pos)
 {
-    if (pos > data.size() || WORD_SIZE > data.size() - pos) {
+    if (pos > data.size() || kWordSize > data.size() - pos) {
         return std::nullopt;
     }
 
-    const auto word = data.substr(pos, WORD_SIZE);
+    const auto word = data.substr(pos, kWordSize);
     size_t res = 0;
 
-    for (size_t i = 0; i < WORD_SIZE; ++i) {
+    for (size_t i = 0; i < kWordSize; ++i) {
         const auto byte = word[i];
-        if (i < WORD_SIZE - sizeof(size_t) && byte != 0) {
+        if (i < kWordSize - sizeof(size_t) && byte != 0) {
             return std::nullopt;
         }
 
-        if (i >= WORD_SIZE - sizeof(size_t)) {
+        if (i >= kWordSize - sizeof(size_t)) {
             res = (res << 8) | byte;
         }
     }
@@ -126,7 +126,7 @@ inline auto read_dynamic_payload(bytes_view data, size_t& pos, std::string_view 
         throw std::runtime_error(
             std::string{"ABI decoder: can not read '"}.append(type_name).append("' offset"));
     }
-    pos += WORD_SIZE;
+    pos += kWordSize;
     const size_t offset = *read_offset_res;
 
     const auto read_length_res = read_size(data, offset);
@@ -136,7 +136,7 @@ inline auto read_dynamic_payload(bytes_view data, size_t& pos, std::string_view 
     }
     const size_t length = *read_length_res;
 
-    const auto payload_res = checked_add(offset, WORD_SIZE);
+    const auto payload_res = checked_add(offset, kWordSize);
     if (!payload_res) {
         throw std::runtime_error(
             std::string{"ABI decoder: '"}.append(type_name).append("' payload offset overflow"));
@@ -157,23 +157,23 @@ template <unsigned B>
 requires ValidIntBits<B>
 inline auto decode(uint_t<B>, bytes_view data, size_t& pos) -> typename cpp_type<uint_t<B>>::type
 {
-    const auto substr_res = safe_substr(data, pos, WORD_SIZE);
+    const auto substr_res = safe_substr(data, pos, kWordSize);
     if (!substr_res) {
         throw std::runtime_error("ABI decoder: can not read 'uint' data");
     }
     const auto word = *substr_res;
-    pos += WORD_SIZE;
+    pos += kWordSize;
 
-    constexpr size_t value_bytes = B / 8;
-    if constexpr (value_bytes < WORD_SIZE) {
-        if (!bytes_are(word, 0, WORD_SIZE - value_bytes, uint8_t{0})) {
+    constexpr size_t kValueBytes = B / 8;
+    if constexpr (kValueBytes < kWordSize) {
+        if (!bytes_are(word, 0, kWordSize - kValueBytes, uint8_t{0})) {
             throw std::runtime_error(
                 "ABI decoder: 'uint' value does not fit into requested bit width");
         }
     }
 
     const auto val =
-        intx::be::load<intx::uint256>(*reinterpret_cast<const uint8_t (*)[WORD_SIZE]>(word.data()));
+        intx::be::load<intx::uint256>(*reinterpret_cast<const uint8_t (*)[kWordSize]>(word.data()));
     return val;
 }
 
@@ -182,16 +182,16 @@ template <unsigned B>
 requires ValidIntBits<B>
 inline auto decode(int_t<B>, bytes_view data, size_t& pos) -> typename cpp_type<int_t<B>>::type
 {
-    const auto substr_res = safe_substr(data, pos, WORD_SIZE);
+    const auto substr_res = safe_substr(data, pos, kWordSize);
     if (!substr_res) {
         throw std::runtime_error("ABI decoder: can not read 'int' data");
     }
     const auto word = *substr_res;
-    pos += WORD_SIZE;
+    pos += kWordSize;
 
-    constexpr size_t value_bytes = B / 8;
-    if constexpr (value_bytes < WORD_SIZE) {
-        const size_t sign_byte_index = WORD_SIZE - value_bytes;
+    constexpr size_t kValueBytes = B / 8;
+    if constexpr (kValueBytes < kWordSize) {
+        const size_t sign_byte_index = kWordSize - kValueBytes;
         const uint8_t expected_prefix =
             (word[sign_byte_index] & 0x80) != 0 ? uint8_t{0xff} : uint8_t{0};
         if (!bytes_are(word, 0, sign_byte_index, expected_prefix)) {
@@ -200,21 +200,21 @@ inline auto decode(int_t<B>, bytes_view data, size_t& pos) -> typename cpp_type<
     }
 
     const auto val =
-        intx::be::load<intx::uint256>(*reinterpret_cast<const uint8_t (*)[WORD_SIZE]>(word.data()));
+        intx::be::load<intx::uint256>(*reinterpret_cast<const uint8_t (*)[kWordSize]>(word.data()));
     return val;
 }
 
 // bool
 inline auto decode(bool_t, bytes_view data, size_t& pos) -> typename cpp_type<bool_t>::type
 {
-    const auto substr_res = safe_substr(data, pos, WORD_SIZE);
+    const auto substr_res = safe_substr(data, pos, kWordSize);
     if (!substr_res) {
         throw std::runtime_error("ABI decoder: can not read 'bool' data");
     }
     const auto word = *substr_res;
-    pos += WORD_SIZE;
+    pos += kWordSize;
 
-    if (!bytes_are(word, 0, WORD_SIZE - 1, uint8_t{0}) || (word.back() != 0 && word.back() != 1)) {
+    if (!bytes_are(word, 0, kWordSize - 1, uint8_t{0}) || (word.back() != 0 && word.back() != 1)) {
         throw std::runtime_error("ABI decoder: invalid 'bool' value");
     }
 
@@ -225,18 +225,18 @@ inline auto decode(bool_t, bytes_view data, size_t& pos) -> typename cpp_type<bo
 // address
 inline auto decode(address_t, bytes_view data, size_t& pos) -> cpp_type<address_t>::type
 {
-    const auto substr_res = safe_substr(data, pos, WORD_SIZE);
+    const auto substr_res = safe_substr(data, pos, kWordSize);
     if (!substr_res) {
         throw std::runtime_error("ABI decoder: can not read 'address' data");
     }
     const auto word = *substr_res;
-    pos += WORD_SIZE;
+    pos += kWordSize;
 
-    if (!bytes_are(word, 0, WORD_SIZE - ADDRESS_LENGTH, uint8_t{0})) {
+    if (!bytes_are(word, 0, kWordSize - kAddressLength, uint8_t{0})) {
         throw std::runtime_error("ABI decoder: non-zero 'address' prefix");
     }
 
-    const auto val = bytes(word.data() + word.size() - ADDRESS_LENGTH, ADDRESS_LENGTH);
+    const auto val = bytes(word.data() + word.size() - kAddressLength, kAddressLength);
     return val;
 }
 
@@ -246,15 +246,15 @@ requires ValidBytesN<N>
 inline auto decode(bytes_fixed_t<N>, bytes_view data, size_t& pos) ->
     typename cpp_type<bytes_fixed_t<N>>::type
 {
-    const auto substr_res = safe_substr(data, pos, WORD_SIZE);
+    const auto substr_res = safe_substr(data, pos, kWordSize);
     if (!substr_res) {
         throw std::runtime_error("ABI decoder: can not read 'static bytes' data");
     }
     const auto word = *substr_res;
-    pos += WORD_SIZE;
+    pos += kWordSize;
 
-    if constexpr (N < WORD_SIZE) {
-        if (!bytes_are(word, N, WORD_SIZE, uint8_t{0})) {
+    if constexpr (N < kWordSize) {
+        if (!bytes_are(word, N, kWordSize, uint8_t{0})) {
             throw std::runtime_error("ABI decoder: non-zero 'static bytes' padding");
         }
     }
@@ -295,7 +295,7 @@ inline auto decode(array_t<T, N>, bytes_view data, size_t& pos) ->
 {
     typename cpp_type<array_t<T, N>>::type val{};
 
-    if constexpr (is_static_v<T>) {
+    if constexpr (kIsStatic<T>) {
         for (auto& item : val) {
             item = decode(T{}, data, pos);
         }
@@ -306,7 +306,7 @@ inline auto decode(array_t<T, N>, bytes_view data, size_t& pos) ->
             throw std::runtime_error(
                 "ABI decoder: can not read offset to 'fixed-length array' data");
         }
-        pos += WORD_SIZE;
+        pos += kWordSize;
         size_t offset = *read_offset_res;
 
         const auto substr_res = safe_substr(data, offset);
@@ -335,7 +335,7 @@ inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos) ->
         throw std::runtime_error(
             "ABI decoder: can not read offset to 'variable-length array' data");
     }
-    pos += WORD_SIZE;
+    pos += kWordSize;
     size_t offset = *read_offset_res;
 
     // Get array length
@@ -346,7 +346,7 @@ inline auto decode(dyn_array_t<T>, bytes_view data, size_t& pos) ->
     const size_t length = *read_length_res;
 
     // Get array data
-    const auto array_data_offset_res = checked_add(offset, WORD_SIZE);
+    const auto array_data_offset_res = checked_add(offset, kWordSize);
     if (!array_data_offset_res) {
         throw std::runtime_error("ABI decoder: 'variable-length array' data offset overflow");
     }
@@ -372,7 +372,7 @@ template <class... Ts>
 inline auto decode(tuple_t<Ts...>, bytes_view data, size_t& pos) ->
     typename cpp_type<tuple_t<Ts...>>::type
 {
-    if constexpr (std::bool_constant<(is_static_v<Ts> && ...)>::value) {
+    if constexpr (std::bool_constant<(kIsStatic<Ts> && ...)>::value) {
         // Static tuple: its components are laid out sequentially in the head
         typename cpp_type<tuple_t<Ts...>>::type val{};
 
@@ -391,7 +391,7 @@ inline auto decode(tuple_t<Ts...>, bytes_view data, size_t& pos) ->
         if (!read_offset_res) {
             throw std::runtime_error("ABI decoder: can not read 'tuple' offset");
         }
-        pos += WORD_SIZE;
+        pos += kWordSize;
         size_t offset = *read_offset_res;
 
         // Get tuple data
@@ -421,7 +421,7 @@ inline auto decode_at(Tag tag, bytes_view data, size_t at) -> typename cpp_type<
 template <AbiTag Tag>
 inline auto decode(bytes_view data, size_t& pos) -> typename cpp_type<Tag>::type
 {
-    if (pos % WORD_SIZE != 0) {
+    if (pos % kWordSize != 0) {
         throw std::runtime_error("ABI decoder: head position must be 32-byte aligned");
     }
 

@@ -38,7 +38,7 @@ int main()
         "0000000000000000000000000000000000000000000000000000000000000005"
         "68656c6c6f000000000000000000000000000000000000000000000000000000");
 
-    const auto message = solabi::decode<Message>(bytes_view{encoded.data(), encoded.size()});
+    const auto message = solabi::decode<Message>(solabi::bytes_view{encoded.data(), encoded.size()});
 
     std::cout << intx::to_string(message.number) << '\n';
     std::cout << message.text << '\n';
@@ -123,9 +123,9 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/prefix
 | `uint<M>` | `solabi::uint_t<M>` | `intx::uint256` |
 | `int<M>` | `solabi::int_t<M>` | `intx::uint256` two's-complement bits |
 | `bool` | `solabi::bool_t` | `bool` |
-| `address` | `solabi::address_t` | `bytes` with 20 bytes |
-| `bytes<M>` | `solabi::bytes_fixed_t<M>` | `bytes` |
-| `bytes` | `solabi::bytes_dyn_t` | `bytes` |
+| `address` | `solabi::address_t` | `solabi::bytes` with 20 bytes |
+| `bytes<M>` | `solabi::bytes_fixed_t<M>` | `solabi::bytes` |
+| `bytes` | `solabi::bytes_dyn_t` | `solabi::bytes` |
 | `string` | `solabi::string_t` | `std::string` |
 | `T[M]` | `solabi::array_t<T, M>` | `std::array<cpp_type<T>, M>` |
 | `T[]` | `solabi::dyn_array_t<T>` | `std::vector<cpp_type<T>>` |
@@ -142,7 +142,7 @@ struct User
     bool active;
 };
 
-auto user = solabi::decode<User>(bytes_view{data.data(), data.size()});
+auto user = solabi::decode<User>(solabi::bytes_view{data.data(), data.size()});
 ```
 
 The user type must be constructible from the decoded tuple values, effectively:
@@ -153,7 +153,7 @@ User{id, active}
 
 ## Utilities
 
-`solabi::from_hex(std::string_view)` converts hex strings into `bytes`.
+`solabi::from_hex(std::string_view)` converts hex strings into `solabi::bytes`.
 It accepts optional `0x` / `0X` prefixes and rejects malformed input.
 
 ## Current Scope

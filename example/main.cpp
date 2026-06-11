@@ -33,13 +33,13 @@ int main()
                          "68656c6c6f000000000000000000000000000000000000000000000000000000");
 
     const auto number = solabi::decode<solabi::uint_t<256>>(
-        bytes_view{encoded_number.data(), encoded_number.size()});
+        solabi::bytes_view{encoded_number.data(), encoded_number.size()});
 
-    const auto text =
-        solabi::decode<solabi::string_t>(bytes_view{encoded_string.data(), encoded_string.size()});
+    const auto text = solabi::decode<solabi::string_t>(
+        solabi::bytes_view{encoded_string.data(), encoded_string.size()});
 
     const auto message =
-        solabi::decode<Message>(bytes_view{encoded_message.data(), encoded_message.size()});
+        solabi::decode<Message>(solabi::bytes_view{encoded_message.data(), encoded_message.size()});
 
     std::cout << "number: " << intx::to_string(number) << '\n';
     std::cout << "text: " << text << '\n';

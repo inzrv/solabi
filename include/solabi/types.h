@@ -30,14 +30,14 @@ template <unsigned Bits>
 requires ValidIntBits<Bits>
 struct uint_t
 {
-    static constexpr unsigned bits = Bits;
+    static constexpr unsigned kBits = Bits;
 };
 
 template <unsigned Bits>
 requires ValidIntBits<Bits>
 struct int_t
 {
-    static constexpr unsigned bits = Bits;
+    static constexpr unsigned kBits = Bits;
 };
 
 struct bool_t
@@ -50,7 +50,7 @@ template <unsigned N>
 requires ValidBytesN<N>
 struct bytes_fixed_t
 {
-    static constexpr unsigned size = N;
+    static constexpr unsigned kSize = N;
 };
 
 struct bytes_dyn_t
@@ -63,7 +63,7 @@ template <class T, size_t N>
 struct array_t
 {
     using element = T;
-    static constexpr size_t length = N;
+    static constexpr size_t kLength = N;
 };
 
 template <class T>
@@ -76,7 +76,7 @@ template <class... Ts>
 struct tuple_t
 {
     using elements = std::tuple<Ts...>;
-    static constexpr size_t size = sizeof...(Ts);
+    static constexpr size_t kSize = sizeof...(Ts);
 };
 
 // Carrier types
@@ -88,26 +88,32 @@ template <class T>
 concept HasAbiTag = requires { typename T::abi_tag; };
 
 template <class Tag>
-struct is_tuple_tag : std::false_type
-{};
+struct is_tuple_tag
+{
+    static constexpr bool kValue = false;
+};
 
 template <class... Ts>
-struct is_tuple_tag<tuple_t<Ts...>> : std::true_type
-{};
+struct is_tuple_tag<tuple_t<Ts...>>
+{
+    static constexpr bool kValue = true;
+};
 
 template <class T, bool = HasAbiTag<T>>
-struct has_abi_tuple_tag : std::false_type
-{};
+struct has_abi_tuple_tag
+{
+    static constexpr bool kValue = false;
+};
 
 template <class T>
 struct has_abi_tuple_tag<T, true>
 {
-    static constexpr bool value = is_tuple_tag<typename T::abi_tag>::value &&
-                                  requires { typename cpp_type<typename T::abi_tag>::type; };
+    static constexpr bool kValue = is_tuple_tag<typename T::abi_tag>::kValue &&
+                                   requires { typename cpp_type<typename T::abi_tag>::type; };
 };
 
 template <class T>
-concept HasAbiTupleTag = has_abi_tuple_tag<T>::value;
+concept HasAbiTupleTag = has_abi_tuple_tag<T>::kValue;
 
 template <unsigned B>
 requires ValidIntBits<B>
@@ -182,58 +188,82 @@ struct cpp_type<T>
 // Utils
 
 template <class Tag>
-struct is_static : std::false_type
-{};
+struct is_static
+{
+    static constexpr bool kValue = false;
+};
 
 template <unsigned B>
 requires ValidIntBits<B>
-struct is_static<uint_t<B>> : std::true_type
-{};
+struct is_static<uint_t<B>>
+{
+    static constexpr bool kValue = true;
+};
 
 template <unsigned B>
 requires ValidIntBits<B>
-struct is_static<int_t<B>> : std::true_type
-{};
+struct is_static<int_t<B>>
+{
+    static constexpr bool kValue = true;
+};
 
 template <>
-struct is_static<bool_t> : std::true_type
-{};
+struct is_static<bool_t>
+{
+    static constexpr bool kValue = true;
+};
 
 template <>
-struct is_static<address_t> : std::true_type
-{};
+struct is_static<address_t>
+{
+    static constexpr bool kValue = true;
+};
 
 template <unsigned N>
 requires ValidBytesN<N>
-struct is_static<bytes_fixed_t<N>> : std::true_type
-{};
+struct is_static<bytes_fixed_t<N>>
+{
+    static constexpr bool kValue = true;
+};
 
 template <>
-struct is_static<bytes_dyn_t> : std::false_type
-{};
+struct is_static<bytes_dyn_t>
+{
+    static constexpr bool kValue = false;
+};
 
 template <>
-struct is_static<string_t> : std::false_type
-{};
+struct is_static<string_t>
+{
+    static constexpr bool kValue = false;
+};
 
 template <class E, size_t N>
-struct is_static<array_t<E, N>> : is_static<E>
-{};
+struct is_static<array_t<E, N>>
+{
+    static constexpr bool kValue = is_static<E>::kValue;
+};
 
 template <class E>
-struct is_static<dyn_array_t<E>> : std::false_type
-{};
+struct is_static<dyn_array_t<E>>
+{
+    static constexpr bool kValue = false;
+};
 
 template <class... Ts>
-struct is_static<tuple_t<Ts...>> : std::bool_constant<(is_static<Ts>::value && ...)>
-{};
+struct is_static<tuple_t<Ts...>>
+{
+    static constexpr bool kValue = (is_static<Ts>::kValue && ...);
+};
 
 template <HasAbiTupleTag T>
-struct is_static<T> : is_static<typename T::abi_tag>
-{};
+struct is_static<T>
+{
+    static constexpr bool kValue = is_static<typename T::abi_tag>::kValue;
+};
 
 template <class Tag>
-inline constexpr bool is_static_v = is_static<Tag>::value;
+inline constexpr bool kIsStatic = is_static<Tag>::kValue;
 
 // Common concept for ABI type tags
 template <class T>
